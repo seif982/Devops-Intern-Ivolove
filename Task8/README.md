@@ -16,20 +16,17 @@ This task demonstrates a microservices architecture using **Docker Custom Networ
 ## 🚀 How to Run
 
 ### 1. Create the Custom Network
-```bash
-docker network create --subnet=10.0.0.0/24 my_custom_net
 
+docker network create --subnet=10.0.0.0/24 my_custom_net
+![Build](https://github.com/seif982/Devops-Intern-Ivolove/blob/master/Task8/screenshots/Buildnetwork.png)
 
 . Build and Run Backend
 Bash
+![Build](https://github.com/seif982/Devops-Intern-Ivolove/blob/master/Task8/screenshots/Buildbackendimage.png)
 
 cd Docker5/backend
 docker build -t task8-backend .
 docker run -d --name backend-service --net my_custom_net --ip 10.0.0.10 task8-backend
-
-3. Build and Run Frontend
-Bash
-
-cd ../frontend
-docker build -t task8-frontend .
-docker run -d --name frontend-service -p 8080:5000 --net my_custom_net --ip 10.0.0.20 task8-frontend
+![IP](https://github.com/seif982/Devops-Intern-Ivolove/blob/master/Task8/screenshots/Ipforbackandfront.png)
+Test
+![Test](https://github.com/seif982/Devops-Intern-Ivolove/blob/master/Task8/screenshots/pingandinstallpingtooloncontainer.png)
