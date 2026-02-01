@@ -1,39 +1,64 @@
-@Library('my-shared-library') _ // استدعاء المكتبة المشتركة المطلوبة في اللاب
-
 pipeline {
-    agent { label 'docker-agent' } // تشغيل الـ Pipeline على الـ Slave اللي عملناه
+    agent { label 'docker-agent' } // التأكد من أن هذا هو الـ Label اللي حطيته للنود
 
     environment {
-        DOCKER_CREDS_ID = 'docker-hub-creds'
+        // تأكد أن الاسم ده (docker-hub-creds) هو الـ ID الصحيح في جنكنز
+        DOCKER_CREDS = credentials('docker-hub-creds') 
         IMAGE_NAME = "seif982/jenkins-app"
-        // تحديد الـ Namespace بناءً على اسم الفرع
-        K8S_NAMESPACE = "${env.BRANCH_NAME == 'prod' ? 'prod' : (env.BRANCH_NAME == 'stag' ? 'stag' : 'dev')}"
+        
+        // تحديد الـ Namespace بناءً على الفرع (dev, stag, master/prod)
+        K8S_NAMESPACE = "${env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'main' ? 'prod' : (env.BRANCH_NAME == 'stag' ? 'stag' : 'dev')}"
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
+                // سحب الكود من GitHub
                 checkout scm
             }
         }
 
-        stage('Build & Push Image') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // استخدام الـ Shared Library لبناء الصورة
-                    dockerOps.buildAndPush(IMAGE_NAME, DOCKER_CREDS_ID)
+                    echo "🛠️ Building Image: ${IMAGE_NAME}:${env.BUILD_ID}"
+                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} ."
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
             }
         }
 
-        stage('Deploy to K8s') {
+        stage('Push to Docker Hub') {
             steps {
                 script {
-                    echo "🚀 Deploying to Namespace: ${K8S_NAMESPACE}"
-                    // أمر الـ Deploy باستخدام الـ Namespace المتغير
+                    echo "🚀 Logging into Docker Hub..."
+                    // استخدام متغيرات البيئة اللي جاية من الـ credentials
+                    sh "echo \$DOCKER_CREDS_PSW | docker login -u \$DOCKER_CREDS_USR --password-stdin"
+                    
+                    echo "📦 Pushing Images..."
+                    sh "docker push ${IMAGE_NAME}:${env.BUILD_ID}"
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "☸️ Deploying to Namespace: ${K8S_NAMESPACE}"
+                    // تأكد أن ملف deployment.yaml موجود في الـ root بتاع المشروع
                     sh "kubectl apply -f deployment.yaml -n ${K8S_NAMESPACE}"
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Task Completed Successfully!"
+        }
+        failure {
+            echo "❌ Pipeline Failed. Check the Console Output."
         }
     }
 }
