@@ -1,4 +1,4 @@
-@Library('my-shared-library') _ // استدعاء المكتبة المشتركة المطلوبة في اللاب
+ // استدعاء المكتبة المشتركة المطلوبة في اللاب
 
 pipeline {
     agent { label 'docker-agent' } // تشغيل الـ Pipeline على الـ Slave اللي عملناه
