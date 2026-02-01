@@ -1,19 +1,18 @@
 pipeline {
-    agent { label 'docker-agent' } // التأكد من أن هذا هو الـ Label اللي حطيته للنود
+    agent { label 'docker-agent' } 
 
     environment {
-        // تأكد أن الاسم ده (docker-hub-creds) هو الـ ID الصحيح في جنكنز
+        // تأكد أن الاسم ده هو الموجود في Jenkins Credentials
         DOCKER_CREDS = credentials('docker-hub-creds') 
         IMAGE_NAME = "seif982/jenkins-app"
         
-        // تحديد الـ Namespace بناءً على الفرع (dev, stag, master/prod)
+        // تحديد الـ Namespace بناءً على الفرع
         K8S_NAMESPACE = "${env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'main' ? 'prod' : (env.BRANCH_NAME == 'stag' ? 'stag' : 'dev')}"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                // سحب الكود من GitHub
                 checkout scm
             }
         }
@@ -21,7 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "🛠️ Building Image: ${IMAGE_NAME}:${env.BUILD_ID}"
+                    echo "🛠️ Building Image..."
                     sh "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} ."
                     sh "docker build -t ${IMAGE_NAME}:latest ."
                 }
@@ -32,7 +31,6 @@ pipeline {
             steps {
                 script {
                     echo "🚀 Logging into Docker Hub..."
-                    // استخدام متغيرات البيئة اللي جاية من الـ credentials
                     sh "echo \$DOCKER_CREDS_PSW | docker login -u \$DOCKER_CREDS_USR --password-stdin"
                     
                     echo "📦 Pushing Images..."
@@ -46,19 +44,10 @@ pipeline {
             steps {
                 script {
                     echo "☸️ Deploying to Namespace: ${K8S_NAMESPACE}"
-                    // تأكد أن ملف deployment.yaml موجود في الـ root بتاع المشروع
+                    // تأكد أن ملف deployment.yaml موجود
                     sh "kubectl apply -f deployment.yaml -n ${K8S_NAMESPACE}"
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ Task Completed Successfully!"
-        }
-        failure {
-            echo "❌ Pipeline Failed. Check the Console Output."
         }
     }
 }
