@@ -1,0 +1,53 @@
+pipeline {
+    agent { label 'docker-agent' } 
+
+    environment {
+        // تأكد أن الاسم ده هو الموجود في Jenkins Credentials
+        DOCKER_CREDS = credentials('docker-hub-creds') 
+        IMAGE_NAME = "seif982/jenkins-app"
+        
+        // تحديد الـ Namespace بناءً على الفرع
+        K8S_NAMESPACE = "${env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'main' ? 'prod' : (env.BRANCH_NAME == 'stag' ? 'stag' : 'dev')}"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "🛠️ Building Image..."
+                    sh "docker build -t ${IMAGE_NAME}:${env.BUILD_ID} ."
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    echo "🚀 Logging into Docker Hub..."
+                    sh "echo \$DOCKER_CREDS_PSW | docker login -u \$DOCKER_CREDS_USR --password-stdin"
+                    
+                    echo "📦 Pushing Images..."
+                    sh "docker push ${IMAGE_NAME}:${env.BUILD_ID}"
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "☸️ Deploying to Namespace: ${K8S_NAMESPACE}"
+                    // تأكد أن ملف deployment.yaml موجود
+                    sh "kubectl apply -f deployment.yaml -n ${K8S_NAMESPACE}"
+                }
+            }
+        }
+    }
+}

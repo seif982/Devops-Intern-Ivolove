@@ -1,0 +1,10 @@
+plugin: amazon.aws.aws_ec2
+regions:
+  - eu-north-1
+aws_access_key: "{{ vault_aws_access_key }}"
+aws_secret_key: "{{ vault_aws_secret_key }}"
+hostnames:
+  - network-interface.association.public-ip
+
+compose:
+  ansible_host: public_ip_address

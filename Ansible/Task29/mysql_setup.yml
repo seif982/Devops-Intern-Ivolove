@@ -1,0 +1,63 @@
+---
+
+- name: Lab 29 - Secure MySQL Setup
+
+  hosts: localhost
+
+  become: yes
+
+  vars_files:
+
+    - vars.yaml
+
+
+  tasks:
+
+    - name: 1. Install MySQL Server and Python dependencies
+
+      apt:
+
+        name: [mysql-server, python3-mysqldb, python3-pymysql]
+
+        state: present
+
+        update_cache: yes
+
+
+    - name: 2. Start MySQL Service
+
+      service:
+
+        name: mysql
+
+        state: started
+
+        enabled: yes
+
+
+    - name: 3. Create iVolve Database
+
+      mysql_db:
+
+        name: iVolve
+
+        state: present
+
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+
+    - name: 4. Create MySQL User with privileges
+
+      mysql_user:
+
+        name: ivolve_user
+
+        password: "{{ db_password }}"
+
+        priv: "iVolve.*:ALL"
+
+        state: present
+
+        host: "localhost"
+
+        login_unix_socket: /var/run/mysqld/mysqld.sock

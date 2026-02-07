@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: monitoring
+  labels:
+    app: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app: node-exporter
+  template:
+    metadata:
+      labels:
+        app: node-exporter
+    spec:
+      # دي بتخلي الـ Pod يتجاهل أي قيود (Taints) موجودة على الـ Nodes
+      tolerations:
+      - operator: Exists
+      
+      # مهم جداً للـ node-exporter عشان يشوف بيانات النود الحقيقية
+      hostNetwork: true
+      hostPID: true
+      
+      containers:
+      - name: node-exporter
+        image: prom/node-exporter:latest
+        ports:
+        - containerPort: 9100
+          hostPort: 9100
+          name: metrics

@@ -1,0 +1,64 @@
+// بننادي المكتبة وبنحدد إننا عايزين المسار ده بالظبط
+@Library('my-shared-library') _
+
+pipeline {
+    agent { label 'docker-agent' } // هنا بنقوله روح للـ Slave اللي عليه الليبل ده
+
+    stages {
+        stage('RunUnitTest') {
+            steps {
+                script {
+                    echo "Running Unit Tests..."
+                    // لو عندك سكريبت للتست في المكتبة ناديه هنا
+                }
+            }
+        }
+
+        stage('BuildApp') {
+            steps {
+                // هنا بننادي الملف اللي جوه vars
+                // بما إنه في فولدر فرعي، جنكنز ممكن ميرضاش يشوفه كدة
+                // فالحل البديل إننا نستخدم الـ 'load' لو الـ Shared Library ملقطتش
+                buildApp() 
+            }
+        }
+
+        stage('BuildImage') {
+            steps {
+                script {
+                    dockerOps.buildImage("seif7atemmohamed/jenkins-app", env.BUILD_NUMBER)
+                }
+            }
+        }
+
+        stage('ScanImage') {
+            steps {
+                script {
+                    dockerOps.scanImage("seif7atemmohamed/jenkins-app", env.BUILD_NUMBER)
+                }
+            }
+        }
+
+        stage('PushImage') {
+            steps {
+                script {
+                    dockerOps.pushImage("seif7atemmohamed/jenkins-app", env.BUILD_NUMBER, 'docker-hub-creds')
+                }
+            }
+        }
+
+        stage('RemoveImageLocally') {
+            steps {
+                sh "docker rmi seif7atemmohamed/jenkins-app:${env.BUILD_NUMBER}"
+            }
+        }
+
+        stage('DeployOnK8s') {
+            steps {
+                script {
+                    k8sDeploy()
+                }
+            }
+        }
+    }
+}

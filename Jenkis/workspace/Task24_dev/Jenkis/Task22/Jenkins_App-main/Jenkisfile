@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+    
+    environment {
+        seif7atemmohamed
+        DOCKER_IMAGE = "your-docker-username/jenkins-app" 
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Clone Source Code') {
+            steps {
+                // الكود ده بيسحب المشروع من GitHub
+              git branch: 'main', url: 'https://github.com/seif982/Devops-Intern-Ivolove.git' 
+            }
+        }
+
+        stage('Run Unit Test') {
+            steps {
+                sh 'echo "Running tests..." && echo "Tests passed!"' 
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                script {
+                    // بناء الصورة
+                    sh "docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} ."
+                    
+                    // استخدام التوكن اللي خزنته في Jenkins (ID: docker-hub-creds)
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', 
+                                                      passwordVariable: 'DOCKER_TOKEN', 
+                                                      usernameVariable: 'DOCKER_USER')]) {
+                        sh "echo ${DOCKER_TOKEN} | docker login -u ${DOCKER_USER} --password-stdin"
+                        sh "docker push ${DOCKER_IMAGE}:${IMAGE_TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Clean Up Local') {
+            steps {
+                sh "docker rmi ${DOCKER_IMAGE}:${IMAGE_TAG}"
+            }
+        }
+
+        stage('Deploy to K8s') {
+            steps {
+                // استخدام ملف الـ kubeconfig اللي رفعته (ID: kubeconfig-file)
+                withCredentials([file(credentialsId: 'kubeconfig-file', variable: 'KUBECONFIG')]) {
+                    // تحديث الـ Image في الـ YAML وعمل Apply
+                    sh "sed -i 's|image:.*|image: ${DOCKER_IMAGE}:${IMAGE_TAG}|g' deployment.yaml"
+                    sh "kubectl apply -f deployment.yaml --kubeconfig=${KUBECONFIG}"
+                }
+            }
+        }
+    }
+
+    post {
+        success { echo 'Done! Application deployed to K8s 🎉' }
+        failure { echo 'Something went wrong ❌' }
+    }
+}

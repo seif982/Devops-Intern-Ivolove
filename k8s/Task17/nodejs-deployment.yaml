@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-app
+  namespace: ivolve
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      # Lab 16: Init Container to setup DB and User
+      initContainers:
+      - name: init-db-setup
+        image: mysql:5.7
+        env:
+        - name: MYSQL_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-passwords
+              key: password
+        command:
+        - "/bin/bash"
+        - "-c"
+        - |
+          until mysqladmin ping -h mysql-h --silent; do
+            echo "Waiting for MySQL to be ready..."
+            sleep 2
+          done
+          mysql -h mysql-h -u root "-p$MYSQL_PWD" -e "CREATE DATABASE IF NOT EXISTS ivolve; CREATE USER IF NOT EXISTS 'ivolve_user'@'%' IDENTIFIED BY 'ivolve_pass'; GRANT ALL PRIVILEGES ON ivolve.* TO 'ivolve_user'@'%'; FLUSH PRIVILEGES;"
+
+      # Main Application Container
+      containers:
+      - name: nodejs-container
+        image: seif7atemmohamed/nodejs-app:v1   # مثال: seif982/nodejs-app:latest
+        ports:
+        - containerPort: 3000
+        
+        # Lab 17: Resource Management (Requests & Limits)
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+
+        # Environment Variables from ConfigMap & Secret
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_HOST
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_USER
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_NAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-passwords
+              key: password
+
+---
+# التذكير بأمر الـ Apply
+# kubectl apply -f nodejs-deployment.yaml -n ivolve

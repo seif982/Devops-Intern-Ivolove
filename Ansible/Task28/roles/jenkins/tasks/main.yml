@@ -1,0 +1,21 @@
+---
+- name: 1. Install Java and Dependencies
+  apt:
+    name: [openjdk-17-jre, curl]
+    state: present
+    update_cache: yes
+
+- name: 2. Wipe any old Jenkins configs
+  shell: rm -f /etc/apt/sources.list.d/jenkins.list /etc/apt/sources.list.d/jenkins.sources /usr/share/keyrings/jenkins-keyring.gpg
+  ignore_errors: yes
+
+- name: 3. Add Jenkins Repo as TRUSTED (Bypass GPG check)
+  copy:
+    dest: /etc/apt/sources.list.d/jenkins.list
+    content: "deb [trusted=yes] https://pkg.jenkins.io/debian-stable binary/"
+
+- name: 4. Force Update and Install
+  apt:
+    name: jenkins
+    state: present
+    update_cache: yes

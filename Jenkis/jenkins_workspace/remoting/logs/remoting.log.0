@@ -1,0 +1,10 @@
+Feb 01, 2026 3:56:00 PM hudson.remoting.Launcher createEngine
+INFO: Setting up agent: docker-agent
+Feb 01, 2026 3:56:00 PM hudson.remoting.Engine startEngine
+INFO: Using Remoting version: 3352.v17a_fb_4b_2773f
+Feb 01, 2026 3:56:00 PM org.jenkinsci.remoting.engine.WorkDirManager initializeWorkDir
+INFO: Using ./jenkins_workspace/remoting as a remoting work directory
+Feb 01, 2026 3:56:01 PM hudson.remoting.Launcher$CuiListener status
+INFO: WebSocket connection open
+Feb 01, 2026 3:56:01 PM hudson.remoting.Launcher$CuiListener status
+INFO: Connected

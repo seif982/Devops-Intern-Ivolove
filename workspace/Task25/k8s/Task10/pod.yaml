@@ -1,0 +1,14 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-toleration
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  tolerations:
+  - key: "node"
+    operator: "Equal"
+    value: "worker"
+    effect: "NoSchedule"

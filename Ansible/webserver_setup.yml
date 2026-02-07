@@ -1,0 +1,24 @@
+---
+- name: Configure Web Server (Nginx)
+  hosts: my_local
+  become: yes
+
+  tasks:
+    - name: 1. Update apt cache and Install Nginx
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+        force_apt_get: yes  # بيخلي أنسيبل يستخدم apt-get مباشرة وده أضمن
+
+    - name: 2. Ensure Nginx is started and enabled
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: 3. Customize the Web Page
+      copy:
+        content: "<h1>Welcome to Seif's Automated Web Server! 🚀</h1>"
+        dest: /var/www/html/index.nginx-debian.html
+        mode: '0644'

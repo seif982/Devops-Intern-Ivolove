@@ -1,0 +1,58 @@
+pipeline {
+    agent { label 'docker-agent' }
+
+    environment {
+        DOCKER_IMAGE = "seif982/jenkins-app"
+        BUILD_TAG    = "${env.BUILD_NUMBER}"
+        // تأكد من إضافة الـ Credentials في جنكينز تحت ID باسم docker-creds
+        DOCKER_CREDS = credentials('docker-creds') 
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Push Image') {
+            steps {
+                script {
+                    // السطر ده هيخلينا نتأكد الملفات فين بالظبط
+                    sh "ls -R" 
+                    
+                    // إذا كان الـ Dockerfile في الفولدر الرئيسي، استخدم '.' مباشرة
+                    // لو في فولدر فرعي، غير '.' لمسار الفولدر
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_TAG} ."
+                    
+                    // تسجيل الدخول لـ DockerHub وعمل Push
+                    sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                    sh "docker push ${DOCKER_IMAGE}:${BUILD_TAG}"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "🚀 Deploying to K8s..."
+                    // هنا ضيف أوامر الـ kubectl بتاعتك
+                    // sh "kubectl set image deployment/my-app my-app=${DOCKER_IMAGE}:${BUILD_TAG}"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh "docker logout"
+            echo "Done!"
+        }
+        success {
+            echo "✅ Build and Push Successful!"
+        }
+        failure {
+            echo "❌ Build Failed, check the logs above."
+        }
+    }
+}

@@ -1,0 +1,10 @@
+---
+- name: Infrastructure Setup using Roles
+  hosts: my_local
+  become: yes
+  gather_facts: no  # السطر ده هيخلي أنسيبل يبدأ في التاسكات علطول
+  
+  roles:
+    - docker
+    - kubectl
+    - jenkins

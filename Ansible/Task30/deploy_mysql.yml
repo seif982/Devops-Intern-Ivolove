@@ -1,0 +1,11 @@
+---
+- name: Lab 30 - Deploy MySQL to Discovered EC2
+  hosts: aws_ec2
+  become: yes
+  remote_user: ubuntu
+  vars:
+    # المسار للمفتاح اللي نزلته من AWS في الخطوة اللي فاتت
+    ansible_ssh_private_key_file: "./Task30.pem"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+  roles:
+    - mysql  # تأكد إن عندك فولدر اسمه roles/mysql فيه اللاب القديم
